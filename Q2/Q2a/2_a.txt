@@ -1,0 +1,67 @@
+================================================================
+PROBLEM 2a — Document Frequency (DF) Computation
+Program: DocumentFrequency.java
+================================================================
+
+PREREQUISITES:
+- Hadoop installed and running (start-dfs.sh)
+- opennlp-tools-1.9.3.jar present in working directory
+- stopwords.txt present in working directory
+- Wikipedia-EN-20120601_ARTICLES extracted
+
+================================================================
+STEP 1 — Start Hadoop
+================================================================
+start-dfs.sh
+jps
+# Should show: NameNode, DataNode, SecondaryNameNode
+
+================================================================
+STEP 2 — Set environment
+================================================================
+export HADOOP_OPTS="-Xmx2g -Dmapreduce.framework.name=local"
+
+================================================================
+STEP 3 — Compile
+================================================================
+javac -classpath $(hadoop classpath):opennlp-tools-1.9.3.jar DocumentFrequency.java
+jar cf docfreq.jar DocumentFrequency*.class
+
+================================================================
+STEP 4 — Run on full Wikipedia dataset
+================================================================
+time hadoop jar docfreq.jar DocumentFrequency \
+    "file:///path/to/Wikipedia-EN-20120601_ARTICLES" \
+    output_df \
+    "file:///path/to/stopwords.txt"
+
+# Replace /path/to/ with your actual directory path
+# Example for our system:
+# time /mnt/c/Users/harsh/hadoop/bin/hadoop jar docfreq.jar DocumentFrequency \
+#     "file:///mnt/e/SEM6/NO SQL/Assignments/Assignment 2/Wikipedia-EN-20120601_ARTICLES" \
+#     output_df \
+#     "file:///mnt/e/SEM6/NO SQL/Assignments/Assignment 2/stopwords.txt"
+
+================================================================
+STEP 5 — Collect output into single TSV file
+================================================================
+hadoop fs -cat /user/<username>/output_df/part-r-00000 > df_output_full.tsv
+
+# Output format: TERM<tab>DF
+
+================================================================
+STEP 6 — Extract top 100 terms by document frequency
+================================================================
+sort -t$'\t' -k2 -rn df_output_full.tsv | head -100 > top100df.tsv
+
+================================================================
+STEP 7 — Verify output
+================================================================
+head -20 df_output_full.tsv
+head -20 top100df.tsv
+
+================================================================
+OUTPUT FILES:
+- df_output_full.tsv  : All terms with their DF values
+- top100df.tsv        : Top 100 high-DF terms (used in Problem 2b)
+================================================================
