@@ -1,0 +1,13 @@
+start-dfs.sh
+start-yarn.sh
+
+hdfs dfs -mkdir /wiki_input
+hdfs dfs -put wiki_data/* /wiki_input
+
+hadoop jar ~/wc2.jar WordCount2 \
+-skippatterns file:///root/Nosql/stopwords.txt \
+/wiki_input /wiki_output
+
+hdfs dfs -get /wiki_output/part-r-00000 top50_raw.txt
+
+hdfs dfs -put -f top50.txt /
