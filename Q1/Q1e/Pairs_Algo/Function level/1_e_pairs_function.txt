@@ -1,0 +1,125 @@
+================================================================
+PROBLEM 1e — Pairs Co-occurrence with MAP-FUNCTION LEVEL
+         Local Aggregation
+Program: PairsFunctionLevel.java
+================================================================
+
+DESCRIPTION:
+This program implements the Pairs approach for co-occurrence
+matrix generation with Map-FUNCTION level local aggregation.
+
+A fresh HashMap is created INSIDE each map() call as a local
+variable. It accumulates counts only for pairs found in that
+single record/line, then flushes at the end of each map() call.
+A Combiner is also used to further reduce intermediate data.
+
+Less aggressive than class-level aggregation — reduces duplicates
+within a single record but not across records. Lower memory usage
+compared to class-level.
+
+PREREQUISITES:
+- Hadoop installed and running (start-dfs.sh)
+- top50words_large.txt (top 50 words from Problem 1a) present
+- Wikipedia-EN-20120601_ARTICLES dataset extracted
+- PairsFunctionLevel.java in working directory
+
+================================================================
+STEP 1 — Start Hadoop
+================================================================
+start-dfs.sh
+jps
+# Should show: NameNode, DataNode, SecondaryNameNode
+
+================================================================
+STEP 2 — Set environment
+================================================================
+export HADOOP_OPTS="-Xmx2g -Dmapreduce.framework.name=local"
+
+================================================================
+STEP 3 — Compile and create JAR
+================================================================
+javac -classpath $(hadoop classpath) PairsFunctionLevel.java
+jar cf PairsFunctionLevel.jar PairsFunctionLevel*.class
+
+================================================================
+STEP 4 — Run for d = {1, 2, 3, 4} (run one by one)
+================================================================
+
+# d=1
+time hadoop jar PairsFunctionLevel.jar PairsFunctionLevel \
+    "file:///path/to/Wikipedia-EN-20120601_ARTICLES" \
+    output_pfl_large_d1 1 \
+    "file:///path/to/top50words_large.txt"
+
+# d=2
+time hadoop jar PairsFunctionLevel.jar PairsFunctionLevel \
+    "file:///path/to/Wikipedia-EN-20120601_ARTICLES" \
+    output_pfl_large_d2 2 \
+    "file:///path/to/top50words_large.txt"
+
+# d=3
+time hadoop jar PairsFunctionLevel.jar PairsFunctionLevel \
+    "file:///path/to/Wikipedia-EN-20120601_ARTICLES" \
+    output_pfl_large_d3 3 \
+    "file:///path/to/top50words_large.txt"
+
+# d=4
+time hadoop jar PairsFunctionLevel.jar PairsFunctionLevel \
+    "file:///path/to/Wikipedia-EN-20120601_ARTICLES" \
+    output_pfl_large_d4 4 \
+    "file:///path/to/top50words_large.txt"
+
+# Replace /path/to/ with your actual directory path
+# Example for our system:
+# "file:///mnt/e/SEM6/NO SQL/Assignments/Assignment 2/Wikipedia-EN-20120601_ARTICLES"
+# "file:///mnt/e/SEM6/NO SQL/Assignments/Assignment 2/top50words_large.txt"
+
+================================================================
+STEP 5 — After each run, save output from HDFS to local
+================================================================
+hadoop fs -get /user/<username>/output_pfl_large_d1 .
+hadoop fs -get /user/<username>/output_pfl_large_d2 .
+hadoop fs -get /user/<username>/output_pfl_large_d3 .
+hadoop fs -get /user/<username>/output_pfl_large_d4 .
+
+# Replace <username> with your Linux username
+
+================================================================
+STEP 6 — Verify output for each run
+================================================================
+hadoop fs -cat /user/<username>/output_pfl_large_d1/part-r-00000 | head -20
+hadoop fs -cat /user/<username>/output_pfl_large_d2/part-r-00000 | head -20
+hadoop fs -cat /user/<username>/output_pfl_large_d3/part-r-00000 | head -20
+hadoop fs -cat /user/<username>/output_pfl_large_d4/part-r-00000 | head -20
+
+================================================================
+STEP 7 — Clear RAM between runs
+================================================================
+sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
+free -h
+
+================================================================
+PROGRAM ARGUMENTS:
+args[0] = Input path (Wikipedia articles directory)
+args[1] = Output path (new directory, must not exist)
+args[2] = Window distance d (1, 2, 3, or 4)
+args[3] = Path to top50words file (distributed cache)
+
+OUTPUT FORMAT:
+word1,word2 <tab> count
+
+Example:
+city,first      14
+first,city      14
+state,united    9
+united,state    9
+
+================================================================
+DIFFERENCE FROM CLASS-LEVEL:
+- Class-level: HashMap persists across ALL map() calls,
+  flushed ONCE in cleanup() — most aggressive optimization
+- Function-level: Fresh HashMap per map() call,
+  flushed at end of each call — moderate optimization
+- Function-level uses less memory but sends more
+  intermediate data to reducers than class-level
+================================================================
