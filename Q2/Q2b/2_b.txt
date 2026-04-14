@@ -1,0 +1,81 @@
+================================================================
+PROBLEM 2b — TF-IDF Score Computation
+Program: TFIDFScore.java
+================================================================
+
+PREREQUISITES:
+- Problem 2a must be completed first (need top100df.tsv)
+- Hadoop installed and running (start-dfs.sh)
+- opennlp-tools-1.9.3.jar present in working directory
+- top100df.tsv present in working directory
+- Wikipedia-EN-20120601_ARTICLES extracted
+
+FORMULA: SCORE = TF x log(10000 / DF + 1)
+
+================================================================
+STEP 1 — Start Hadoop
+================================================================
+start-dfs.sh
+jps
+# Should show: NameNode, DataNode, SecondaryNameNode
+
+================================================================
+STEP 2 — Set environment
+================================================================
+export HADOOP_OPTS="-Xmx2g -Dmapreduce.framework.name=local"
+
+================================================================
+STEP 3 — Compile
+================================================================
+javac -classpath $(hadoop classpath):opennlp-tools-1.9.3.jar TFIDFScore.java
+jar cf tfidf.jar TFIDFScore*.class
+
+================================================================
+STEP 4 — Upload top100df.tsv to HDFS (for distributed cache)
+================================================================
+hadoop fs -put -f top100df.tsv top100df.tsv
+
+# Verify upload:
+hadoop fs -ls top100df.tsv
+
+================================================================
+STEP 5 — Run TF-IDF job (runs on 5 splits of dataset)
+================================================================
+# Run on each split separately and combine output:
+
+time hadoop jar tfidf.jar TFIDFScore \
+    "file:///path/to/Wikipedia-EN-20120601_ARTICLES" \
+    output_tfidf \
+    "hdfs://localhost:9000/user/<username>/top100df.tsv"
+
+# Replace /path/to/ with your actual directory path
+# Replace <username> with your Linux username
+# Example for our system:
+# time /mnt/c/Users/harsh/hadoop/bin/hadoop jar tfidf.jar TFIDFScore \
+#     "file:///mnt/e/SEM6/NO SQL/Assignments/Assignment 2/Wikipedia-EN-20120601_ARTICLES" \
+#     output_tfidf \
+#     "hdfs://localhost:9000/user/harshita307/top100df.tsv"
+
+================================================================
+STEP 6 — Collect output into single TSV file
+================================================================
+hadoop fs -cat /user/<username>/output_tfidf/part-r-00000 > tfidf_scores.tsv
+
+# Or if multiple part files:
+hadoop fs -cat /user/<username>/output_tfidf/part-r-* > tfidf_scores_full.tsv
+
+================================================================
+STEP 7 — Verify output
+================================================================
+head -20 tfidf_scores_full.tsv
+wc -l tfidf_scores_full.tsv
+
+================================================================
+OUTPUT FORMAT:
+ID<tab>TERM<tab>SCORE
+
+Example:
+100005.txt    american    1.035975
+100005.txt    extern      0.810375
+100005.txt    three       1.024733
+================================================================
