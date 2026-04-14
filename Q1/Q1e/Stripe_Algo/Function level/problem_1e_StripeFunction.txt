@@ -1,0 +1,61 @@
+         INSTRUCTIONS TO RUN: StripeAlgo_MapFunctionAgg.java
+-------------------------------------------------------------
+
+PRE-REQUISITES:
+---------------
+1. Java JDK 8 or higher installed
+2. Apache Hadoop installed and configured (YARN + HDFS)
+3. HADOOP_HOME environment variable set
+4. Hadoop binaries on PATH
+
+FILES NEEDED:
+-------------
+- StripeAlgo.java
+- Top50_1a.txt (file listing the top 50 words in the dataset)
+- Folder with the WIKI dataset on HDFS
+
+ARGUMENTS (in order):
+---------------------
+  args[0] = HDFS input path  (e.g., /user/hadoop/Wikipedia-EN-20120601_ARTICLES)
+  args[1] = HDFS output path (e.g., /output)
+  args[2] = co-occurrence distance d (integer, e.g., 2)
+  args[3] = HDFS path to Top50_1a.txt (e.g., /user/hadoop/Top50_1a.txt)
+
+STEPS:
+-------------
+
+STEP 1 — Compile the source file
+---------------------------------
+  javac -classpath `hadoop classpath` -d . StripeAlgo_MapFunctionAgg.java
+
+STEP 2 — Create the JAR
+---------------------------------
+  jar -cvf stripesfunc.jar StripeAlgo_MapFunctionAgg*.class
+
+STEP 3 — Upload input data to HDFS
+---------------------------------
+  hdfs dfs -mkdir -p /user/hadoop
+  hdfs dfs -put Wikipedia-EN-20120601_ARTICLES /user/hadoop/
+
+STEP 4 — Upload Top50_1a.txt to HDFS
+---------------------------------
+  hdfs dfs -put Top50_1a.txt /user/hadoop/
+
+STEP 5 — Run the job
+---------------------------------
+  hadoop jar stripesfunc.jar StripeAlgo_MapFunctionAgg \
+  /user/hadoop/Wikipedia-EN-20120601_ARTICLES \
+  output_d1 \
+  1 \
+  /user/hadoop/Top50_1a.txt
+
+  (Replace "1" with your desired co-occurrence window distance.)
+
+STEP 6 — Save the output
+---------------------------------
+  hadoop dfs -get output_d1 .
+
+NOTE:
+------
+- The output path must NOT already exist. Delete it first if running:
+    hadoop dfs -rm -r output_d1
